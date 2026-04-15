@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6efe5;
+  --background-deep: #eadfce;
+  --foreground: #382d27;
+  --text-strong: #2f2621;
+  --surface: #fffaf3;
+  --surface-2: #f4ecdf;
+  --surface-3: #ece1d2;
+  --border: #e4d6c4;
+  --border-strong: #cfbda8;
+  --text-muted: #75655b;
+  --text-faint: #a08f82;
+
+  --accent-sage-soft: #e3ecdf;
+  --accent-sage-strong: #6e8567;
+  --accent-terracotta-soft: #f3ded2;
+  --accent-terracotta-strong: #bb785a;
+  --accent-terracotta-deep: #94553c;
+  --accent-amber-soft: #f7ecd0;
+  --accent-amber-strong: #b78b2f;
+  --accent-rose-soft: #f3dfe0;
+
+  --critical-soft: #f6d8d3;
+  --critical-strong: #a2473c;
+
+  --shadow-soft: 0 18px 45px rgba(93, 68, 48, 0.08);
+  --shadow-button: 0 10px 24px rgba(138, 86, 59, 0.18);
+
+  --nav-bottom-height: 68px;
+  --nav-rail-width: 240px;
+  --time-col-width: 48px;
+  --hour-height: 64px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(188, 120, 90, 0.11), transparent 28%),
+    radial-gradient(circle at top right, rgba(115, 139, 103, 0.12), transparent 30%),
+    linear-gradient(180deg, var(--background) 0%, var(--background-deep) 100%);
+  color: var(--foreground);
+  font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(122, 102, 88, 0.35);
+  border-radius: 999px;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}

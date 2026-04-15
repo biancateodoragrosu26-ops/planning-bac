@@ -1,0 +1,111 @@
+# Planning Bac — project guidance
+
+## Product identity
+This is a real daily-use bac planning application, not a demo.
+The app is for a terminale student with anxiety, procrastination, and irregular output.
+It must feel serious, clear, visual, and emotionally realistic.
+
+## Core product rules
+- Keep the existing codebase and continue from it.
+- Do not restart from zero.
+- Do not do broad unnecessary refactors.
+- Preserve what already works unless there is a clear reason to change it.
+- Prefer targeted changes with clean implementation.
+
+## Main product philosophy
+This app is not primarily a classic agenda or todo list.
+It must help the user think in:
+- periods
+- free slots
+- work blocks
+- fixed constraints
+- remaining capacity
+- urgency before bac
+- delay and risk
+
+## Strategic unit
+The primary strategic unit is NOT hours.
+The primary strategic unit is the "bloc intermédiaire équivalent".
+
+Keep real durations in minutes internally, but display strategic metrics mainly in equivalent intermediate blocks.
+
+Default block thresholds:
+- small block: <= 60 min
+- intermediate block: > 60 min and <= 180 min
+- large block: > 180 min
+
+Default conversion reference:
+- 1 equivalent intermediate block = 120 minutes
+
+These thresholds and the conversion reference must be configurable in settings.
+
+## Fixed bac subjects
+Keep these bac subjects fixed:
+- Mathématiques
+- Physique-Chimie
+- Philosophie
+- Grand oral
+
+Do not turn English, Spanish, etc. into bac subjects.
+
+## Non-bac / school layer
+Support a separate non-bac / school layer for:
+- anglais
+- espagnol
+- devoirs
+- contrôles
+- contraintes scolaires
+- administratif
+- other school obligations
+
+These items may consume time and create events/todos/constraints,
+but they must not pollute the main bac statistics unless explicitly included.
+
+## UX priorities
+- iPad-first mindset, desktop also supported
+- keep interfaces readable and not overloaded
+- calendar remains central
+- dashboard must create urgency
+- retard page must be more analytical
+- inbox must be a real capture-and-route system, not just a note list
+
+## Visual direction
+- cream / warm pastel base
+- ivory cards
+- deep brown or slate text
+- sage / soft terracotta / amber / dusty rose accents
+- elegant urgency, not childish
+- red reserved for critical states
+- very light, coherent icon / emoji use only if helpful
+
+## Working method
+- Before each major implementation step, give a short execution plan.
+- Then implement directly.
+- Test as you go.
+- Preserve local persistence.
+- Keep build green.
+- After each major phase, report:
+  - files changed
+  - what was implemented
+  - how to test
+  - known limitations / deferred items
+
+## Current mission context
+You are taking over from Claude after Phase 2.
+The project already has:
+- project scaffold
+- data/store foundations
+- calendar base
+- free slot creation
+- work block base
+- detail panel
+- basic dashboard/retard/inbox pages
+
+Your current mission is to continue with a revised Phase 3 focused on:
+- equivalent intermediate block logic
+- ideal vs realistic capacity
+- stronger urgency on dashboard
+- more analytical delay page
+- smarter inbox with routing/conversion
+- non-bac / school item handling
+- refined visual system
