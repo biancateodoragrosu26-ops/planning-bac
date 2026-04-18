@@ -26,6 +26,7 @@ import { shiftISOToDate, toDateString } from '@/lib/utils/dateUtils'
 interface AppActions {
   hydrate: () => void
   reset: () => void
+  replaceState: (nextState: AppState) => void
 
   updateSettings: (patch: Partial<AppSettings>) => void
 
@@ -113,6 +114,11 @@ export const useAppStore = create<Store>()(
       const seed = createSeedState()
       localAdapter.save(seed)
       set({ ...seed, _hydrated: true })
+    },
+
+    replaceState(nextState) {
+      localAdapter.save(nextState)
+      set({ ...nextState, _hydrated: true })
     },
 
     updateSettings(patch) {

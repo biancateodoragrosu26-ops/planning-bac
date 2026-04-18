@@ -1,16 +1,21 @@
 import type {
   AppState,
   CalendarEvent,
+  ExamWeekSettings,
+  FreeSlot,
+  PersonalReminder,
   Period,
   QuickNote,
   SchoolItem,
   Subject,
   SubjectTodo,
+  WorkBlock,
 } from '@/lib/types'
 import type { PersistenceAdapter } from './adapter'
 import { createSeedState } from '@/lib/seed'
 
 const STORAGE_KEY = 'planning-bac-v1'
+export const LOCAL_STORAGE_KEY = STORAGE_KEY
 
 function toNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
@@ -149,7 +154,75 @@ function migrateSchoolItems(rawSchoolItems: unknown): SchoolItem[] {
   })
 }
 
-function migrateState(rawState: unknown): AppState | null {
+function migrateFreeSlots(rawFreeSlots: unknown): FreeSlot[] {
+  if (!Array.isArray(rawFreeSlots)) return []
+
+  return rawFreeSlots.map((raw) => {
+    const record = raw as Record<string, unknown>
+    return {
+      id: toString(record.id, `${Date.now()}`),
+      startTime: toString(record.startTime, ''),
+      endTime: toString(record.endTime, ''),
+      label: record.label as string | undefined,
+    }
+  }).filter((slot) => slot.startTime && slot.endTime)
+}
+
+function migrateWorkBlocks(rawWorkBlocks: unknown): WorkBlock[] {
+  if (!Array.isArray(rawWorkBlocks)) return []
+
+  return rawWorkBlocks.map((raw) => {
+    const record = raw as Record<string, unknown>
+    return {
+      id: toString(record.id, `${Date.now()}`),
+      subjectId: record.subjectId as WorkBlock['subjectId'],
+      freeSlotId: toString(record.freeSlotId, ''),
+      startTime: toString(record.startTime, ''),
+      endTime: toString(record.endTime, ''),
+      status: (record.status as WorkBlock['status']) ?? 'planned',
+      notes: record.notes as string | undefined,
+    }
+  }).filter((block) => block.freeSlotId && block.startTime && block.endTime)
+}
+
+function migrateReminders(rawReminders: unknown): PersonalReminder[] {
+  if (!Array.isArray(rawReminders)) return []
+
+  return rawReminders.map((raw) => {
+    const record = raw as Record<string, unknown>
+    return {
+      id: toString(record.id, `${Date.now()}`),
+      title: toString(record.title, 'Rappel'),
+      dueDate: toString(record.dueDate, ''),
+      done: typeof record.done === 'boolean' ? record.done : false,
+      createdAt: toString(record.createdAt, new Date().toISOString()),
+    }
+  }).filter((reminder) => reminder.dueDate)
+}
+
+function migrateExamWeek(rawExamWeek: unknown, fallback: ExamWeekSettings): ExamWeekSettings {
+  if (!rawExamWeek || typeof rawExamWeek !== 'object') return fallback
+
+  const record = rawExamWeek as Record<string, unknown>
+  const entries = Array.isArray(record.entries)
+    ? record.entries.map((raw) => {
+        const entry = raw as Record<string, unknown>
+        return {
+          subjectId: entry.subjectId as ExamWeekSettings['entries'][number]['subjectId'],
+          examDate: toString(entry.examDate, ''),
+          examTime: toString(entry.examTime, ''),
+          durationMinutes: toNumber(entry.durationMinutes, 0),
+        }
+      }).filter((entry) => entry.examDate && entry.examTime && entry.durationMinutes > 0)
+    : fallback.entries
+
+  return {
+    entries,
+    notes: typeof record.notes === 'string' ? record.notes : fallback.notes,
+  }
+}
+
+export function parseStoredState(rawState: unknown): AppState | null {
   if (!rawState || typeof rawState !== 'object') return null
 
   const seed = createSeedState()
@@ -182,21 +255,14 @@ function migrateState(rawState: unknown): AppState | null {
     },
     subjects: migrateSubjects(record.subjects, seed.subjects),
     periods: migratePeriods(record.periods),
-    freeSlots: Array.isArray(record.freeSlots) ? (record.freeSlots as AppState['freeSlots']) : [],
-    workBlocks: Array.isArray(record.workBlocks)
-      ? (record.workBlocks as AppState['workBlocks'])
-      : [],
+    freeSlots: migrateFreeSlots(record.freeSlots),
+    workBlocks: migrateWorkBlocks(record.workBlocks),
     events: migrateEvents(record.events),
     todos: migrateTodos(record.todos),
     notes: migrateNotes(record.notes),
     schoolItems: migrateSchoolItems(record.schoolItems),
-    reminders: Array.isArray(record.reminders)
-      ? (record.reminders as AppState['reminders'])
-      : [],
-    examWeek:
-      record.examWeek && typeof record.examWeek === 'object'
-        ? (record.examWeek as AppState['examWeek'])
-        : seed.examWeek,
+    reminders: migrateReminders(record.reminders),
+    examWeek: migrateExamWeek(record.examWeek, seed.examWeek),
   }
 }
 
@@ -206,7 +272,7 @@ export const localAdapter: PersistenceAdapter = {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return null
-      return migrateState(JSON.parse(raw))
+      return parseStoredState(JSON.parse(raw))
     } catch {
       console.warn('[planning-bac] Failed to load from localStorage')
       return null
