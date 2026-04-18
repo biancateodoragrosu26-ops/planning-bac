@@ -1,4 +1,5 @@
 import {
+  addMinutes,
   format,
   parseISO,
   startOfWeek,
@@ -35,6 +36,54 @@ export function toDateString(date: Date): string {
 
 export function toISOLocal(date: Date): string {
   return date.toISOString()
+}
+
+export function toDateTimeLocalValue(date: Date | string): string {
+  const parsed = typeof date === 'string' ? parseISO(date) : date
+  const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
+}
+
+export function fromDateTimeLocalValue(value: string): string {
+  return new Date(value).toISOString()
+}
+
+export function startOfLocalDayISO(date: Date): string {
+  const local = new Date(date)
+  local.setHours(0, 0, 0, 0)
+  return local.toISOString()
+}
+
+export function endOfLocalDayISO(date: Date): string {
+  const local = new Date(date)
+  local.setHours(23, 59, 59, 999)
+  return local.toISOString()
+}
+
+function toLocalDayComparable(value: Date | string): string {
+  if (typeof value === 'string') return value.slice(0, 10)
+  return format(value, 'yyyy-MM-dd')
+}
+
+export function isDayWithinRange(
+  day: Date | string,
+  startDate: string,
+  endDate: string
+): boolean {
+  const target = toLocalDayComparable(day)
+  return startDate <= target && endDate >= target
+}
+
+export function shiftISOToDate(iso: string, targetDate: Date): string {
+  const source = parseISO(iso)
+  const startOfSourceDay = new Date(source)
+  startOfSourceDay.setHours(0, 0, 0, 0)
+
+  const startOfTargetDay = new Date(targetDate)
+  startOfTargetDay.setHours(0, 0, 0, 0)
+
+  const minutesSinceStart = differenceInMinutes(source, startOfSourceDay)
+  return addMinutes(startOfTargetDay, minutesSinceStart).toISOString()
 }
 
 // ── Week days ─────────────────────────────────────────────────────────────────

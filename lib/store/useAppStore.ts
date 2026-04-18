@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
+import { addDays, differenceInCalendarDays, parseISO } from 'date-fns'
 import type {
   AppSettings,
   AppState,
@@ -19,6 +20,8 @@ import type {
 } from '@/lib/types'
 import { localAdapter } from '@/lib/persistence/localAdapter'
 import { createSeedState } from '@/lib/seed'
+import { generateId } from '@/lib/utils/idUtils'
+import { shiftISOToDate, toDateString } from '@/lib/utils/dateUtils'
 
 interface AppActions {
   hydrate: () => void
@@ -35,6 +38,10 @@ interface AppActions {
   addFreeSlot: (slot: FreeSlot) => void
   updateFreeSlot: (id: string, patch: Partial<FreeSlot>) => void
   deleteFreeSlot: (id: string) => void
+  copyFreeSlotToDate: (id: string, targetDate: string) => void
+  moveFreeSlotToDate: (id: string, targetDate: string) => void
+  copyDayFreeSlots: (sourceDate: string, targetDate: string) => void
+  copyWeekFreeSlots: (sourceWeekStart: string, targetWeekStart: string) => void
 
   addWorkBlock: (block: WorkBlock) => void
   updateWorkBlock: (id: string, patch: Partial<WorkBlock>) => void
@@ -156,6 +163,103 @@ export const useAppStore = create<Store>()(
           freeSlots: state.freeSlots.filter((slot) => slot.id !== id),
           workBlocks: state.workBlocks.filter((block) => block.freeSlotId !== id),
         }))
+      )
+    },
+    copyFreeSlotToDate(id, targetDate) {
+      withSave(get, () =>
+        set((state) => {
+          const slot = state.freeSlots.find((entry) => entry.id === id)
+          if (!slot) return state
+
+          const target = parseISO(targetDate)
+          return {
+            freeSlots: [
+              ...state.freeSlots,
+              {
+                ...slot,
+                id: generateId(),
+                startTime: shiftISOToDate(slot.startTime, target),
+                endTime: shiftISOToDate(slot.endTime, target),
+              },
+            ],
+          }
+        })
+      )
+    },
+    moveFreeSlotToDate(id, targetDate) {
+      withSave(get, () =>
+        set((state) => {
+          const slot = state.freeSlots.find((entry) => entry.id === id)
+          if (!slot) return state
+
+          const target = parseISO(targetDate)
+          return {
+            freeSlots: state.freeSlots.map((entry) =>
+              entry.id === id
+                ? {
+                    ...entry,
+                    startTime: shiftISOToDate(entry.startTime, target),
+                    endTime: shiftISOToDate(entry.endTime, target),
+                  }
+                : entry
+            ),
+            workBlocks: state.workBlocks.map((block) =>
+              block.freeSlotId === id
+                ? {
+                    ...block,
+                    startTime: shiftISOToDate(block.startTime, target),
+                    endTime: shiftISOToDate(block.endTime, target),
+                  }
+                : block
+            ),
+          }
+        })
+      )
+    },
+    copyDayFreeSlots(sourceDate, targetDate) {
+      withSave(get, () =>
+        set((state) => {
+          const target = parseISO(targetDate)
+          const clones = state.freeSlots
+            .filter((slot) => toDateString(parseISO(slot.startTime)) === sourceDate)
+            .map((slot) => ({
+              ...slot,
+              id: generateId(),
+              startTime: shiftISOToDate(slot.startTime, target),
+              endTime: shiftISOToDate(slot.endTime, target),
+            }))
+
+          if (clones.length === 0) return state
+          return { freeSlots: [...state.freeSlots, ...clones] }
+        })
+      )
+    },
+    copyWeekFreeSlots(sourceWeekStart, targetWeekStart) {
+      withSave(get, () =>
+        set((state) => {
+          const sourceStart = parseISO(sourceWeekStart)
+          const targetStart = parseISO(targetWeekStart)
+          const clones = state.freeSlots
+            .filter((slot) => {
+              const slotDay = parseISO(slot.startTime)
+              const offset = differenceInCalendarDays(slotDay, sourceStart)
+              return offset >= 0 && offset <= 6
+            })
+            .map((slot) => {
+              const slotDay = parseISO(slot.startTime)
+              const offset = differenceInCalendarDays(slotDay, sourceStart)
+              const targetDay = addDays(targetStart, offset)
+              return {
+                ...slot,
+                id: generateId(),
+                startTime: shiftISOToDate(slot.startTime, targetDay),
+                endTime: shiftISOToDate(slot.endTime, targetDay),
+              }
+            })
+
+          if (clones.length === 0) return state
+          return { freeSlots: [...state.freeSlots, ...clones] }
+        })
       )
     },
 

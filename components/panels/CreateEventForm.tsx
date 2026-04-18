@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store/useAppStore'
 import { generateId } from '@/lib/utils/idUtils'
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/lib/utils/dateUtils'
 import { Button } from '@/components/ui/Button'
 import type { CalendarEventType } from '@/lib/types'
 
@@ -21,19 +22,19 @@ const EVENT_TYPES: { id: CalendarEventType; label: string; color: string }[] = [
 ]
 
 function defaultStart(provided?: string) {
-  if (provided) return provided.slice(0, 16)
+  if (provided) return toDateTimeLocalValue(provided)
   const date = new Date()
   date.setMinutes(0, 0, 0)
   date.setHours(date.getHours() + 1)
-  return date.toISOString().slice(0, 16)
+  return toDateTimeLocalValue(date)
 }
 
 function defaultEnd(provided?: string, startISO?: string) {
-  if (provided) return provided.slice(0, 16)
+  if (provided) return toDateTimeLocalValue(provided)
   const date = startISO ? new Date(startISO) : new Date()
   date.setMinutes(0, 0, 0)
   date.setHours(date.getHours() + 2)
-  return date.toISOString().slice(0, 16)
+  return toDateTimeLocalValue(date)
 }
 
 export function CreateEventForm({ startTime, endTime, onClose }: Props) {
@@ -59,8 +60,8 @@ export function CreateEventForm({ startTime, endTime, onClose }: Props) {
     addEvent({
       id: generateId(),
       title: title.trim(),
-      startTime: startDate.toISOString(),
-      endTime: endDate.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime: fromDateTimeLocalValue(end),
       type,
       color: selectedType.color,
     })

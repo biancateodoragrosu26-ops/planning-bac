@@ -1,11 +1,19 @@
 'use client'
 
 import React, { useRef, useCallback } from 'react'
-import { format, startOfDay, endOfDay } from 'date-fns'
+import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useCalendarStore } from '@/lib/store/useCalendarStore'
 import { useAppStore } from '@/lib/store/useAppStore'
-import { toMinutesFromMidnight, snapToGrid, minutesToISO, intervalsOverlap } from '@/lib/utils/dateUtils'
+import {
+  endOfLocalDayISO,
+  intervalsOverlap,
+  isDayWithinRange,
+  minutesToISO,
+  snapToGrid,
+  startOfLocalDayISO,
+  toMinutesFromMidnight,
+} from '@/lib/utils/dateUtils'
 import { FreeSlotBlock } from './FreeSlotBlock'
 import type { CalendarEvent, Period } from '@/lib/types'
 
@@ -22,8 +30,7 @@ function pxToMinutes(px: number)  { return (px / HOUR_HEIGHT) * 60 }
 
 function PeriodBandRow({ days, periods }: { days: Date[]; periods: Period[] }) {
   const hasAnyPeriod = days.some((day) => {
-    const d = format(day, 'yyyy-MM-dd')
-    return periods.some((p) => p.startDate <= d && p.endDate >= d)
+    return periods.some((period) => isDayWithinRange(day, period.startDate, period.endDate))
   })
 
   if (!hasAnyPeriod) return null
@@ -33,8 +40,9 @@ function PeriodBandRow({ days, periods }: { days: Date[]; periods: Period[] }) {
       {/* Gutter */}
       <div className="w-[var(--time-col-width)] shrink-0" />
       {days.map((day, i) => {
-        const d      = format(day, 'yyyy-MM-dd')
-        const period = periods.find((p) => p.startDate <= d && p.endDate >= d)
+        const period = periods.find((entry) =>
+          isDayWithinRange(day, entry.startDate, entry.endDate)
+        )
         return (
           <div
             key={i}
@@ -125,13 +133,29 @@ interface DayColumnProps {
   workBlocks: ReturnType<typeof useAppStore.getState>['workBlocks']
   subjects: ReturnType<typeof useAppStore.getState>['subjects']
   onDragCreateSlot: (startISO: string, endISO: string) => void
+  scrollHostRef: React.RefObject<HTMLDivElement | null>
 }
 
-function DayColumn({ date, isToday, freeSlots, events, workBlocks, subjects, onDragCreateSlot }: DayColumnProps) {
+function DayColumn({
+  date,
+  isToday,
+  freeSlots,
+  events,
+  workBlocks,
+  subjects,
+  onDragCreateSlot,
+  scrollHostRef,
+}: DayColumnProps) {
   const colRef       = useRef<HTMLDivElement>(null)
   const previewRef   = useRef<HTMLDivElement>(null)
   const isDragging   = useRef(false)
+  const pendingPress = useRef(false)
   const dragStartMin = useRef(0)
+  const pressTimer = useRef<number | null>(null)
+  const pointerIdRef = useRef<number | null>(null)
+  const latestPointerY = useRef(0)
+  const pressOrigin = useRef({ x: 0, y: 0 })
+  const autoScrollRaf = useRef<number | null>(null)
 
   function getMinutesFromClientY(clientY: number): number {
     const rect     = colRef.current!.getBoundingClientRect()
@@ -153,26 +177,109 @@ function DayColumn({ date, isToday, freeSlots, events, workBlocks, subjects, onD
     if (previewRef.current) previewRef.current.style.display = 'none'
   }
 
+  function clearPressTimer() {
+    if (pressTimer.current) {
+      window.clearTimeout(pressTimer.current)
+      pressTimer.current = null
+    }
+  }
+
+  function stopAutoScroll() {
+    if (autoScrollRaf.current) {
+      cancelAnimationFrame(autoScrollRaf.current)
+      autoScrollRaf.current = null
+    }
+  }
+
+  function runAutoScroll() {
+    if (!isDragging.current) {
+      stopAutoScroll()
+      return
+    }
+
+    const scrollHost = scrollHostRef.current
+    if (scrollHost) {
+      const rect = scrollHost.getBoundingClientRect()
+      const threshold = 88
+      const topGap = latestPointerY.current - rect.top
+      const bottomGap = rect.bottom - latestPointerY.current
+      let delta = 0
+
+      if (topGap < threshold) {
+        delta = -Math.ceil((threshold - topGap) / 5)
+      } else if (bottomGap < threshold) {
+        delta = Math.ceil((threshold - bottomGap) / 5)
+      }
+
+      if (delta !== 0) {
+        scrollHost.scrollTop += delta
+        showPreview(dragStartMin.current, getMinutesFromClientY(latestPointerY.current))
+      }
+    }
+
+    autoScrollRaf.current = requestAnimationFrame(runAutoScroll)
+  }
+
+  function cancelPendingPress() {
+    pendingPress.current = false
+    pointerIdRef.current = null
+    clearPressTimer()
+  }
+
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 && e.pointerType === 'mouse') return
     // Only fire on direct column background — not on slots/blocks/handles
     const t = e.target as HTMLElement
     if (t !== colRef.current && !t.classList.contains('col-bg')) return
 
-    e.currentTarget.setPointerCapture(e.pointerId)
-    isDragging.current = true
-    dragStartMin.current = getMinutesFromClientY(e.clientY)
-    showPreview(dragStartMin.current, dragStartMin.current + 60)
+    const currentTarget = e.currentTarget
+    pointerIdRef.current = e.pointerId
+    latestPointerY.current = e.clientY
+    pressOrigin.current = { x: e.clientX, y: e.clientY }
+    pendingPress.current = true
+    clearPressTimer()
+
+    pressTimer.current = window.setTimeout(() => {
+      pendingPress.current = false
+      isDragging.current = true
+      dragStartMin.current = getMinutesFromClientY(latestPointerY.current)
+      if (pointerIdRef.current !== null) {
+        currentTarget.setPointerCapture(pointerIdRef.current)
+      }
+      showPreview(dragStartMin.current, dragStartMin.current + 60)
+      runAutoScroll()
+    }, e.pointerType === 'mouse' ? 160 : 320)
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    latestPointerY.current = e.clientY
+
+    if (pendingPress.current) {
+      const movedX = Math.abs(e.clientX - pressOrigin.current.x)
+      const movedY = Math.abs(e.clientY - pressOrigin.current.y)
+      if (movedX > 8 || movedY > 8) {
+        cancelPendingPress()
+      }
+      return
+    }
+
     if (!isDragging.current) return
     showPreview(dragStartMin.current, getMinutesFromClientY(e.clientY))
   }
 
   function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    clearPressTimer()
+    stopAutoScroll()
+
+    if (pendingPress.current) {
+      cancelPendingPress()
+      hidePreview()
+      return
+    }
+
     if (!isDragging.current) return
     isDragging.current = false
+    pointerIdRef.current = null
     hidePreview()
 
     const endMin   = getMinutesFromClientY(e.clientY)
@@ -191,11 +298,16 @@ function DayColumn({ date, isToday, freeSlots, events, workBlocks, subjects, onD
     <div
       ref={colRef}
       className="relative flex-1 border-r border-[var(--border)] select-none col-bg"
-      style={{ height: GRID_HEIGHT, touchAction: 'none' }}
+      style={{ height: GRID_HEIGHT, touchAction: 'pan-y' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      onPointerCancel={() => { isDragging.current = false; hidePreview() }}
+      onPointerCancel={() => {
+        cancelPendingPress()
+        isDragging.current = false
+        stopAutoScroll()
+        hidePreview()
+      }}
     >
       {/* Drag-create preview */}
       <div
@@ -258,7 +370,9 @@ export function TimeGrid({ days }: TimeGridProps) {
 
   // Auto-scroll to current time on mount
   const didScroll = useRef(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollRef = useCallback((node: HTMLDivElement | null) => {
+    scrollContainerRef.current = node
     if (node && !didScroll.current) {
       didScroll.current = true
       const now     = new Date()
@@ -269,14 +383,14 @@ export function TimeGrid({ days }: TimeGridProps) {
 
   // Filter slots/events for a given day — uses interval overlap so multi-day slots will show
   function getSlotsForDay(date: Date) {
-    const dayStart = startOfDay(date).toISOString()
-    const dayEnd   = endOfDay(date).toISOString()
+    const dayStart = startOfLocalDayISO(date)
+    const dayEnd = endOfLocalDayISO(date)
     return freeSlots.filter((fs) => intervalsOverlap(fs.startTime, fs.endTime, dayStart, dayEnd))
   }
 
   function getEventsForDay(date: Date) {
-    const dayStart = startOfDay(date).toISOString()
-    const dayEnd   = endOfDay(date).toISOString()
+    const dayStart = startOfLocalDayISO(date)
+    const dayEnd = endOfLocalDayISO(date)
     return events.filter((ev) => intervalsOverlap(ev.startTime, ev.endTime, dayStart, dayEnd))
   }
 
@@ -343,6 +457,7 @@ export function TimeGrid({ days }: TimeGridProps) {
               workBlocks={workBlocks}
               subjects={subjects}
               onDragCreateSlot={handleDragCreateSlot}
+              scrollHostRef={scrollContainerRef}
             />
           ))}
         </div>

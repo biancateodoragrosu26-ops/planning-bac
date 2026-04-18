@@ -1,6 +1,7 @@
 import type {
   AppState,
   CalendarEvent,
+  Period,
   QuickNote,
   SchoolItem,
   Subject,
@@ -22,13 +23,23 @@ function toString(value: unknown, fallback: string): string {
 function migrateSubjects(rawSubjects: unknown, fallback: Subject[]): Subject[] {
   if (!Array.isArray(rawSubjects)) return fallback
 
-  return rawSubjects.map((raw, index) => {
+  const rawById = new Map<Subject['id'], Record<string, unknown>>()
+  rawSubjects.forEach((raw, index) => {
     const base = fallback[index] ?? fallback[0]
     const record = raw as Record<string, unknown>
-    const legacyHours = toNumber(record.estimatedHoursRemaining, base.estimatedMinutesRemaining / 60)
+    const id = ((record.id as Subject['id']) ?? base.id) as Subject['id']
+    rawById.set(id, record)
+  })
+
+  return fallback.map((base) => {
+    const record = rawById.get(base.id) ?? {}
+    const legacyHours = toNumber(
+      record.estimatedHoursRemaining,
+      base.estimatedMinutesRemaining / 60
+    )
 
     return {
-      id: (record.id as Subject['id']) ?? base.id,
+      id: base.id,
       name: toString(record.name, base.name),
       color: toString(record.color, base.color),
       estimatedMinutesRemaining:
@@ -38,6 +49,26 @@ function migrateSubjects(rawSubjects: unknown, fallback: Subject[]): Subject[] {
       estimatedUpdatedAt: toString(record.estimatedUpdatedAt, base.estimatedUpdatedAt),
     }
   })
+}
+
+function migratePeriods(rawPeriods: unknown): Period[] {
+  if (!Array.isArray(rawPeriods)) return []
+
+  return rawPeriods.map((raw) => {
+    const record = raw as Record<string, unknown>
+    return {
+      id: toString(record.id, `${Date.now()}`),
+      name: toString(record.name, 'Periode'),
+      startDate: toString(record.startDate, ''),
+      endDate: toString(record.endDate, ''),
+      color: toString(record.color, '#3b82f6'),
+      description: record.description as string | undefined,
+      objective: record.objective as string | undefined,
+      exitCondition: record.exitCondition as string | undefined,
+      plan: record.plan as string | undefined,
+      notes: record.notes as string | undefined,
+    }
+  }).filter((period) => period.startDate && period.endDate)
 }
 
 function migrateNotes(rawNotes: unknown): QuickNote[] {
@@ -150,7 +181,7 @@ function migrateState(rawState: unknown): AppState | null {
       ),
     },
     subjects: migrateSubjects(record.subjects, seed.subjects),
-    periods: Array.isArray(record.periods) ? (record.periods as AppState['periods']) : [],
+    periods: migratePeriods(record.periods),
     freeSlots: Array.isArray(record.freeSlots) ? (record.freeSlots as AppState['freeSlots']) : [],
     workBlocks: Array.isArray(record.workBlocks)
       ? (record.workBlocks as AppState['workBlocks'])

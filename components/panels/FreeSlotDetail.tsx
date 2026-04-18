@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store/useAppStore'
 import { useCalendarStore } from '@/lib/store/useCalendarStore'
-import { formatDate, durationMinutes } from '@/lib/utils/dateUtils'
+import { formatDate, durationMinutes, fromDateTimeLocalValue, toDateTimeLocalValue } from '@/lib/utils/dateUtils'
 import { availableMinutes } from '@/lib/utils/slotUtils'
 import { Button } from '@/components/ui/Button'
 import type { FreeSlot } from '@/lib/types'
@@ -22,8 +22,8 @@ export function FreeSlotDetail({ slot, onClose }: Props) {
 
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(slot.label ?? '')
-  const [start, setStart] = useState(slot.startTime.slice(0, 16))
-  const [end, setEnd] = useState(slot.endTime.slice(0, 16))
+  const [start, setStart] = useState(() => toDateTimeLocalValue(slot.startTime))
+  const [end, setEnd] = useState(() => toDateTimeLocalValue(slot.endTime))
 
   const totalMin = durationMinutes(slot.startTime, slot.endTime)
   const availMin = availableMinutes(slot, workBlocks)
@@ -35,8 +35,8 @@ export function FreeSlotDetail({ slot, onClose }: Props) {
     if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) return
     updateFreeSlot(slot.id, {
       label: label.trim() || undefined,
-      startTime: s.toISOString(),
-      endTime: e.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime: fromDateTimeLocalValue(end),
     })
     setEditing(false)
   }

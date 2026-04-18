@@ -5,6 +5,7 @@ export type SubjectId =
   | 'physique-chimie'
   | 'philosophie'
   | 'grand-oral'
+  | 'ece'
 
 export interface Subject {
   id: SubjectId
@@ -23,6 +24,10 @@ export interface Period {
   endDate: string
   color: string
   description?: string
+  objective?: string
+  exitCondition?: string
+  plan?: string
+  notes?: string
 }
 
 // Free slots
@@ -186,6 +191,44 @@ export interface AppState {
   reminders: PersonalReminder[]
   examWeek: ExamWeekSettings
   settings: AppSettings
+}
+
+// Programme / Maîtrise
+
+export type ProgramSubjectId = 'maths' | 'physique' | 'chimie' | 'philosophie'
+export type ChapterDifficulty = 'ca-va' | 'intermediaire' | 'dur'
+export type ChapterPrep = 'rouge' | 'orange' | 'jaune' | 'vert'
+
+export interface ChapterPart {
+  id: string
+  name: string
+  difficulty: ChapterDifficulty
+  prep: ChapterPrep
+  exerciseCount: number
+}
+
+export interface ProgramChapter {
+  id: string
+  subjectId: ProgramSubjectId
+  name: string
+  difficulty: ChapterDifficulty
+  prep: ChapterPrep
+  exerciseCount: number
+  parts: ChapterPart[]
+}
+
+export interface PhiloNotion {
+  id: string
+  name: string
+  difficulty: ChapterDifficulty
+  prep: ChapterPrep
+  exerciseCount: number
+  notes?: string
+}
+
+export interface ProgramState {
+  chapters: ProgramChapter[]
+  philoNotions: PhiloNotion[]
 }
 
 // Calendar UI types

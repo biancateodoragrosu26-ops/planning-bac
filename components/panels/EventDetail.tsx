@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store/useAppStore'
-import { formatDate } from '@/lib/utils/dateUtils'
+import { formatDate, fromDateTimeLocalValue, toDateTimeLocalValue } from '@/lib/utils/dateUtils'
 import { Button } from '@/components/ui/Button'
 import type { CalendarEvent } from '@/lib/types'
 
@@ -16,8 +16,8 @@ export function EventDetail({ event, onClose }: Props) {
   const deleteEvent = useAppStore((s) => s.deleteEvent)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(event.title)
-  const [start, setStart] = useState(event.startTime.slice(0, 16))
-  const [end, setEnd] = useState(event.endTime.slice(0, 16))
+  const [start, setStart] = useState(() => toDateTimeLocalValue(event.startTime))
+  const [end, setEnd] = useState(() => toDateTimeLocalValue(event.endTime))
 
   function handleSave() {
     const s = new Date(start)
@@ -25,8 +25,8 @@ export function EventDetail({ event, onClose }: Props) {
     if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s || !title.trim()) return
     updateEvent(event.id, {
       title: title.trim(),
-      startTime: s.toISOString(),
-      endTime: e.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime: fromDateTimeLocalValue(end),
     })
     setEditing(false)
   }

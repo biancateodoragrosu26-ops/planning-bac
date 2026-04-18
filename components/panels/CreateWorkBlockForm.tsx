@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAppStore } from '@/lib/store/useAppStore'
 import { generateId } from '@/lib/utils/idUtils'
 import { isBlockContained } from '@/lib/utils/slotUtils'
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/lib/utils/dateUtils'
 import { Button } from '@/components/ui/Button'
 import type { SubjectId } from '@/lib/types'
 
@@ -20,8 +21,8 @@ export function CreateWorkBlockForm({ freeSlotId, startTime, endTime, onClose }:
   const freeSlots = useAppStore((s) => s.freeSlots)
 
   const [subjectId, setSubjectId] = useState<SubjectId>(subjects[0]?.id ?? 'maths')
-  const [start, setStart] = useState(startTime.slice(0, 16))
-  const [end, setEnd] = useState(endTime.slice(0, 16))
+  const [start, setStart] = useState(() => toDateTimeLocalValue(startTime))
+  const [end, setEnd] = useState(() => toDateTimeLocalValue(endTime))
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
 
@@ -45,8 +46,8 @@ export function CreateWorkBlockForm({ freeSlotId, startTime, endTime, onClose }:
       id: generateId(),
       subjectId,
       freeSlotId,
-      startTime: s.toISOString(),
-      endTime: e.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime: fromDateTimeLocalValue(end),
       status: 'planned' as const,
       notes: notes.trim() || undefined,
     }

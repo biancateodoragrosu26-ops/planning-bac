@@ -109,3 +109,14 @@ Your current mission is to continue with a revised Phase 3 focused on:
 - smarter inbox with routing/conversion
 - non-bac / school item handling
 - refined visual system
+
+When I ask for an update:
+- first give a very short plan (max 5 lines)
+- then edit the files immediately
+- do not stop after planning
+- do not wait for another approval unless there is a real blocker
+- always end with:
+  - files changed
+  - features/fixes implemented
+  - build/test status
+If no file was changed, say so explicitly.

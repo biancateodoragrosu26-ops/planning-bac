@@ -3,7 +3,7 @@ import './globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 
 const APP_NAME = 'Planning Bac'
-const APP_DESCRIPTION = 'Pilotage des revisions du baccalaureat par blocs equivalents.'
+const APP_DESCRIPTION = 'Organisation simple des revisions du baccalaureat.'
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,

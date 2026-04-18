@@ -9,6 +9,10 @@ import {
   minutesToHours,
 } from '@/lib/utils/strategyUtils'
 
+function blockLabel(value: number) {
+  return `${formatBlockCount(value)} blocs`
+}
+
 export default function RetardPage() {
   const subjects = useAppStore((state) => state.subjects)
   const workBlocks = useAppStore((state) => state.workBlocks)
@@ -26,14 +30,14 @@ export default function RetardPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-muted)]">
-            Retard et analyse
+            Retard
           </p>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[var(--text-strong)]">
-            La verite du plan avant le bac
+          <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-strong)] md:text-4xl">
+            La marge reelle avant le bac
           </h1>
-          <p className="max-w-3xl text-sm md:text-base text-[var(--text-muted)]">
-            Cette page regarde la charge restante en blocs intermediaires equivalents, la compare
-            a la capacite reellement exploitable, puis montre ou la tension se concentre.
+          <p className="max-w-3xl text-sm text-[var(--text-muted)] md:text-base">
+            Cette page compare le travail restant, la place disponible et le vrai rythme a
+            tenir avant le bac.
           </p>
         </div>
 
@@ -43,10 +47,10 @@ export default function RetardPage() {
               Travail restant
             </p>
             <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-              {formatBlockCount(summary.remainingWorkEquivalentBlocks)}
+              {blockLabel(summary.remainingWorkEquivalentBlocks)}
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              blocs eq · {formatHourCount(minutesToHours(summary.remainingWorkMinutes))} h
+              {formatHourCount(minutesToHours(summary.remainingWorkMinutes))} h au total
             </p>
           </article>
 
@@ -55,10 +59,10 @@ export default function RetardPage() {
               Capacite ideale
             </p>
             <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-              {formatBlockCount(summary.idealRemainingCapacityEquivalentBlocks)}
+              {blockLabel(summary.idealRemainingCapacityEquivalentBlocks)}
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              blocs eq · {formatHourCount(minutesToHours(summary.idealRemainingCapacityMinutes))} h
+              {formatHourCount(minutesToHours(summary.idealRemainingCapacityMinutes))} h libres
             </p>
           </article>
 
@@ -67,15 +71,15 @@ export default function RetardPage() {
               Capacite realiste
             </p>
             <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-              {formatBlockCount(summary.realisticRemainingCapacityEquivalentBlocks)}
+              {blockLabel(summary.realisticRemainingCapacityEquivalentBlocks)}
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              blocs eq · {formatHourCount(minutesToHours(summary.realisticRemainingCapacityMinutes))} h
+              {formatHourCount(minutesToHours(summary.realisticRemainingCapacityMinutes))} h utiles
             </p>
           </article>
 
           <article className="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)]">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-faint)]">Gap</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-faint)]">Ecart</p>
             <p
               className={`mt-2 text-3xl font-semibold ${
                 summary.gapEquivalentBlocks >= 0
@@ -84,10 +88,10 @@ export default function RetardPage() {
               }`}
             >
               {summary.gapEquivalentBlocks >= 0 ? '+' : ''}
-              {formatBlockCount(summary.gapEquivalentBlocks)}
+              {blockLabel(summary.gapEquivalentBlocks)}
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              blocs eq · {summary.gapMinutes >= 0 ? '+' : ''}
+              {summary.gapMinutes >= 0 ? '+' : ''}
               {formatHourCount(minutesToHours(summary.gapMinutes))} h
             </p>
           </article>
@@ -96,13 +100,13 @@ export default function RetardPage() {
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <article className="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)]">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Cadence requise
+              Rythme a tenir
             </p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="rounded-[1.25rem] bg-[var(--surface-2)] p-4">
                 <p className="text-sm text-[var(--text-muted)]">Par jour</p>
                 <p className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
-                  {formatBlockCount(summary.requiredEquivalentBlocksPerDay)} bloc eq
+                  {formatBlockCount(summary.requiredEquivalentBlocksPerDay)} bloc par jour
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">
                   {formatHourCount(summary.requiredHoursPerDay)} h / jour
@@ -115,7 +119,7 @@ export default function RetardPage() {
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">
                   {summary.mostTenseSubject
-                    ? `${formatBlockCount(summary.mostTenseSubject.requiredEquivalentBlocksPerDay)} bloc eq / jour`
+                    ? `${formatBlockCount(summary.mostTenseSubject.requiredEquivalentBlocksPerDay)} bloc par jour`
                     : 'Pas de tension dominante'}
                 </p>
               </div>
@@ -125,7 +129,7 @@ export default function RetardPage() {
               <div className="grid grid-cols-[1.2fr_repeat(4,minmax(0,1fr))] bg-[var(--surface-3)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
                 <span>Matiere</span>
                 <span>Restant</span>
-                <span>Pace/jour</span>
+                <span>Par jour</span>
                 <span>Planifie</span>
                 <span>Fait</span>
               </div>
@@ -135,11 +139,8 @@ export default function RetardPage() {
                     key={subject.subjectId}
                     className="grid grid-cols-[1.2fr_repeat(4,minmax(0,1fr))] items-center gap-3 px-4 py-4 text-sm"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: subject.color }}
-                      />
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: subject.color }} />
                       <span className="truncate font-medium text-[var(--text-strong)]">
                         {subject.name}
                       </span>
@@ -164,13 +165,13 @@ export default function RetardPage() {
 
           <article className="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)]">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Sensibilite du plan
+              Si tu perds du temps
             </p>
             <div className="mt-4 space-y-3">
               <div className="rounded-[1.25rem] bg-[var(--surface-2)] p-4">
                 <p className="text-sm text-[var(--text-muted)]">Perdre une journee</p>
                 <p className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
-                  -{formatBlockCount(summary.impactOfLosingDayEquivalentBlocks)} blocs eq
+                  -{blockLabel(summary.impactOfLosingDayEquivalentBlocks)}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">
                   environ {formatHourCount(minutesToHours(summary.impactOfLosingDayMinutes))} h perdues
@@ -180,7 +181,7 @@ export default function RetardPage() {
               <div className="rounded-[1.25rem] bg-[var(--surface-2)] p-4">
                 <p className="text-sm text-[var(--text-muted)]">Perdre un creneau libre</p>
                 <p className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
-                  -{formatBlockCount(summary.impactOfLosingSlotEquivalentBlocks)} blocs eq
+                  -{blockLabel(summary.impactOfLosingSlotEquivalentBlocks)}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">
                   environ {formatHourCount(minutesToHours(summary.impactOfLosingSlotMinutes))} h utiles
@@ -190,7 +191,7 @@ export default function RetardPage() {
               <div className="rounded-[1.25rem] bg-[var(--surface-2)] p-4">
                 <p className="text-sm text-[var(--text-muted)]">Sauter un bloc</p>
                 <p className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">
-                  -{formatBlockCount(summary.impactOfSkippingOneBlockEquivalentBlocks)} blocs eq
+                  -{blockLabel(summary.impactOfSkippingOneBlockEquivalentBlocks)}
                 </p>
                 <p className="text-sm text-[var(--text-muted)]">
                   environ {formatHourCount(minutesToHours(summary.impactOfSkippingOneBlockMinutes))} h decalees
@@ -200,11 +201,11 @@ export default function RetardPage() {
               {summary.includedSchoolMinutes > 0 && (
                 <div className="rounded-[1.25rem] border border-dashed border-[var(--accent-amber-strong)] bg-[var(--accent-amber-soft)]/45 p-4">
                   <p className="text-sm font-medium text-[var(--text-strong)]">
-                    Items scolaires inclus dans les stats
+                    Items scolaires inclus
                   </p>
                   <p className="mt-1 text-sm text-[var(--text-muted)]">
-                    {formatHourCount(minutesToHours(summary.includedSchoolMinutes))} h sont
-                    volontairement reintegrees dans la charge bac.
+                    {formatHourCount(minutesToHours(summary.includedSchoolMinutes))} h sont bien
+                    reprises dans la charge bac.
                   </p>
                 </div>
               )}

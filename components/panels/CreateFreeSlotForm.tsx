@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store/useAppStore'
 import { generateId } from '@/lib/utils/idUtils'
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '@/lib/utils/dateUtils'
 import { Button } from '@/components/ui/Button'
 
 interface Props {
@@ -12,19 +13,19 @@ interface Props {
 }
 
 function defaultStart(provided?: string): string {
-  if (provided) return provided.slice(0, 16)
+  if (provided) return toDateTimeLocalValue(provided)
   const d = new Date()
   d.setMinutes(0, 0, 0)
   d.setHours(d.getHours() + 1)
-  return d.toISOString().slice(0, 16)
+  return toDateTimeLocalValue(d)
 }
 
 function defaultEnd(provided?: string, start?: string): string {
-  if (provided) return provided.slice(0, 16)
+  if (provided) return toDateTimeLocalValue(provided)
   const base = start ? new Date(start) : new Date()
   if (!start) { base.setMinutes(0, 0, 0); base.setHours(base.getHours() + 3) }
   else base.setTime(base.getTime() + 2 * 60 * 60 * 1000)
-  return base.toISOString().slice(0, 16)
+  return toDateTimeLocalValue(base)
 }
 
 export function CreateFreeSlotForm({ startTime, endTime, onClose }: Props) {
@@ -41,8 +42,8 @@ export function CreateFreeSlotForm({ startTime, endTime, onClose }: Props) {
 
     addFreeSlot({
       id:        generateId(),
-      startTime: s.toISOString(),
-      endTime:   e.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime:   fromDateTimeLocalValue(end),
       label:     label.trim() || undefined,
     })
     onClose()

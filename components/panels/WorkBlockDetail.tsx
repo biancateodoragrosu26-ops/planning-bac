@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAppStore } from '@/lib/store/useAppStore'
-import { formatDate, durationMinutes } from '@/lib/utils/dateUtils'
+import { formatDate, durationMinutes, fromDateTimeLocalValue, toDateTimeLocalValue } from '@/lib/utils/dateUtils'
 import { isBlockContained } from '@/lib/utils/slotUtils'
 import { Button } from '@/components/ui/Button'
 import type { WorkBlock, WorkBlockStatus, SubjectId } from '@/lib/types'
@@ -23,8 +23,8 @@ export function WorkBlockDetail({ block, onClose }: Props) {
 
   const [editing, setEditing] = useState(false)
   const [subjectId, setSubjectId] = useState<SubjectId>(block.subjectId)
-  const [start, setStart] = useState(block.startTime.slice(0, 16))
-  const [end, setEnd] = useState(block.endTime.slice(0, 16))
+  const [start, setStart] = useState(() => toDateTimeLocalValue(block.startTime))
+  const [end, setEnd] = useState(() => toDateTimeLocalValue(block.endTime))
   const [notes, setNotes] = useState(block.notes ?? '')
   const [status, setStatus] = useState<WorkBlockStatus>(block.status)
   const [error, setError] = useState('')
@@ -47,8 +47,8 @@ export function WorkBlockDetail({ block, onClose }: Props) {
     const updatedBlock = {
       ...block,
       subjectId,
-      startTime: s.toISOString(),
-      endTime: e.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime: fromDateTimeLocalValue(end),
       status,
       notes: notes.trim() || undefined,
     }
@@ -58,8 +58,8 @@ export function WorkBlockDetail({ block, onClose }: Props) {
     }
     updateWorkBlock(block.id, {
       subjectId,
-      startTime: s.toISOString(),
-      endTime: e.toISOString(),
+      startTime: fromDateTimeLocalValue(start),
+      endTime: fromDateTimeLocalValue(end),
       status,
       notes: notes.trim() || undefined,
     })

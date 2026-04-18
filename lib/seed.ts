@@ -46,6 +46,13 @@ export function createSeedState(): AppState {
         estimatedMinutesRemaining: 15 * 60,
         estimatedUpdatedAt: now,
       },
+      {
+        id: 'ece',
+        name: 'ECE',
+        color: '#b88978',
+        estimatedMinutesRemaining: 10 * 60,
+        estimatedUpdatedAt: now,
+      },
     ],
 
     periods: [],
